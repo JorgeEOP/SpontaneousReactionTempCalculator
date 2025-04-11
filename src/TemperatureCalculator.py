@@ -1,29 +1,15 @@
 import collections
 import math
-from EntalpyCalculator import EnthalpyCalculator as hcalc
+import pandas as pd
+import numpy as np
 
-#Room Temp: 293.15K
+from EnthalpyCalculator import EnthalpyCalculator as hcalc
+from EntropyCalculator import EntropyCalculator as scalc
 
 """
 Dictionary with atom type and enthalpy
 https://webbook.nist.gov/
 """
-
-# Units: kJ/mol
-MoleculesEnthalpySolidDict = {
-    "Fe": 12.40,
-    "O2": 0, # https://webbook.nist.gov/cgi/cbook.cgi?ID=C7782447&Mask=1
-    "Fe2O3": -825.50
-}
-
-# Units: J/K*mol
-MoleculesEntropySolidDict = {
-    "Fe": 34.76,
-    "O2": 205.15,
-    "Fe2O3": 87.28
-}
-
-d = collections.defaultdict(dict)
 
 class TemperatureCalculator():
     """
@@ -33,7 +19,7 @@ class TemperatureCalculator():
     """
     __reactants: dict = collections.defaultdict(dict)
     __products: dict = collections.defaultdict(dict)
-    __temperatureRange: range
+    __temperatureRange: range = range(250,300)
 
     """
     Data model:
@@ -43,7 +29,6 @@ class TemperatureCalculator():
     """
 
     def __init__(self):
-        self.__temperatureRange = range(250,300)
         pass
 
     def setReactants(self, reactants: dict) -> None:
@@ -54,104 +39,124 @@ class TemperatureCalculator():
         print("TemperatureCalculator::setProducts: ", products)
         self.__products = products
         
-    def setTemperatureRange(self, _temperatureRange: range):
+    def setTemperatureRange(self, _temperatureRange: range) -> None:
         self.__temperatureRange = _temperatureRange
 
-    def getDeltaH(self) -> dict:
+    def getDeltaH(self) -> list[float]:
         """
         Calculates the change in enthalpy using the equation: deltaH = SumProducts(n * deltaH°_f) - SumReactants(m * deltaH°_f)
         Units: kJ/mol
         @return: Change in Enthalpy
         """
-        deltaH: dict
-        entalphyProducts: float = 0
-        entalphyReactants: float = 0
+        deltaH: list[float]
 
-        enthalpiesOfReactants = collections.defaultdict(dict)
-        enthalpiesOfProducts = collections.defaultdict(dict)
+        totalEnthalpyOfReactants = collections.defaultdict(dict)
+        totalEnthalpyOfProducts = collections.defaultdict(dict)
         enthalpyCalc = hcalc()
 
         for reactant in self.__reactants:
-            enthalpiesAndTemp = enthalpyCalc.getEnthalpy(reactant, range(0,700))
-            print("Reactant:: ", reactant)
-            for i in enthalpiesAndTemp:
-                weightedEnthalpy = enthalpiesAndTemp[i] * self.__reactants[reactant]
-                if (i > 295 and i < 300):
-                    print(i, enthalpiesAndTemp[i], weightedEnthalpy)
-
-
+            totalEnthalpyOfReactants[reactant] = enthalpyCalc.getEnthalpy(reactant, self.__temperatureRange)
         for product in self.__products:
-            enthalpiesAndTemp = enthalpyCalc.getEnthalpy(product, range(0,700))
-            print("product:: ", product)
-            for i in enthalpiesAndTemp:
-                weightedEnthalpy = enthalpiesAndTemp[i] * self.__products[product]
-                if (i > 295 and i < 300):
-                    print(i, enthalpiesAndTemp[i], weightedEnthalpy)
-               
-        """
-        for product in self.__products:
-            enthalpies = enthalpyCalc.getEnthalpy(product, range(0,700))
-            enthalpiesOfProducts[product] = self.__products[product] * enthalpies
-        """
+            totalEnthalpyOfProducts[product] = enthalpyCalc.getEnthalpy(product, self.__temperatureRange)
+                
+        totalEnthalpyOfReactants = self.getWeightedEnergyReactant(totalEnthalpyOfReactants)
+        totalEnthalpyOfProducts = self.getWeightedEnergyProduct(totalEnthalpyOfProducts)
 
-        #print (enthalpiesOfReactants.keys())
-        #print (enthalpiesOfProducts.keys())
+        totalReactantsEnthalpy = self.getSumOfAllEnergies(totalEnthalpyOfReactants)
+        totalProductsEnthalpy = self.getSumOfAllEnergies(totalEnthalpyOfProducts)
 
-        #for reactant in self.__reactants:
-        #    print("Molecule: {} ; NumberOfMolecules: {} ; Enthalpy: {}".format(reactant, self.__reactants[reactant], MoleculesEnthalpySolidDict[reactant]))
-        #    entalphyReactants += self.__reactants[reactant] * MoleculesEnthalpySolidDict[reactant]
-
-        """
-        for product in self.__products:
-            print("Molecule: {} ; NumberOfMolecules: {} ; Enthalpy: {}".format(product, self.__products[product], MoleculesEnthalpySolidDict[product]))
-            entalphyProducts += self.__products[product] * MoleculesEnthalpySolidDict[product]
-            
-        #deltaH = entalphyProducts - entalphyReactants
-        print ("--------------------------------------------")
+        deltaH = [0.] * len(totalProductsEnthalpy)
+        for i in range(len(totalProductsEnthalpy)):
+            try:
+                deltaH[i] = totalProductsEnthalpy[i] - totalReactantsEnthalpy[i]
+            except:
+                deltaH[i] = None
 
         return deltaH
-        """
-
-    def getDeltaS(self) -> float:
+    
+    def getDeltaS(self):
         """
         Calculates the change in entropy using the equation: deltaS = SumProducts(n * deltaS°_f) - SumReactants(m * deltaS°_f)
         Units: kJ/mol
 
         @return: Change in Entropy
         """
-        deltaS: float
-        entropyProducts: float = 0
-        entropyReactants: float = 0
+        deltaS: dict
+
+        totalEntropyOfReactants = collections.defaultdict(dict)
+        totalEntropyOfProducts = collections.defaultdict(dict)
+        entropyCalc = scalc()
 
         for reactant in self.__reactants:
-            print("Molecule: {} ; NumberOfMolecules {} ; Entropy: {}".format(reactant, self.__reactants[reactant], MoleculesEntropySolidDict[reactant]))
-            entropyReactants += self.__reactants[reactant] * MoleculesEntropySolidDict[reactant]
-
+            totalEntropyOfReactants[reactant] = entropyCalc.getEntropy(reactant, self.__temperatureRange)
         for product in self.__products:
-            print("Molecule: {} ; NumberOfMolecules {} ; Entropy: {}".format(product, self.__products[product], MoleculesEntropySolidDict[product]))
-            entropyProducts += self.__products[product] * MoleculesEntropySolidDict[product]
+            totalEntropyOfProducts[product] = entropyCalc.getEntropy(product, self.__temperatureRange)
+        
+        totalEntropyOfReactants = self.getWeightedEnergyReactant(totalEntropyOfReactants)
+        totalEntropyOfProducts = self.getWeightedEnergyProduct(totalEntropyOfProducts)
 
+        totalEntropyOfReactants = self.getSumOfAllEnergies(totalEntropyOfReactants)
+        totalEntropyOfProducts = self.getSumOfAllEnergies(totalEntropyOfProducts)
 
-
-        deltaS = entropyProducts - entropyReactants
-        print ("--------------------------------------------")
+        deltaS = [0.] * len(totalEntropyOfProducts)
+        for i in range(len(totalEntropyOfProducts)):
+            try:
+                deltaS[i] = totalEntropyOfProducts[i] - totalEntropyOfReactants[i]
+            except:
+                deltaS[i] = None
 
         return deltaS
+    
+    def getSumOfAllEnergies(self, allElementsAndEnergies: dict):
+        sumOfAllEnergies = collections.defaultdict(dict)
+        length = len(self.__temperatureRange) + 1
+        result = [0.] * length
+
+        # Loop over all molecules
+        for molecule, tempAndEnergies in allElementsAndEnergies.items():
+            for t, energy in tempAndEnergies.items():
+                energies = tempAndEnergies.keys()
+                try:
+                    result[t] = result[t] + float(energy)
+                except:
+                    result[t] = energy
+
+                
+        return result
+        
+    
+    def getWeightedEnergyReactant(self, allMoleculesEnergies):
+        # Weight it by the number of molecules
+        for mol, tempAndEnergy in allMoleculesEnergies.items():
+            nMolecules = self.__reactants[mol]
+            #print("Total Energy of reactant: {} with NMolexules: {}".format(mol, nMolecules))
+            tempAndEnergy.update( (t, energy*nMolecules) for t, energy in tempAndEnergy.items() )
+        return allMoleculesEnergies
+    
+    def getWeightedEnergyProduct(self, allMoleculesEnergies):
+        # Weight it by the number of molecules
+        for mol, tempAndEnergy in allMoleculesEnergies.items():
+            nMolecules = self.__products[mol]
+            #print("Total Energy of Product: {} with NMolexules: {}".format(mol, nMolecules))
+            tempAndEnergy.update( (t, energy*nMolecules) for t, energy in tempAndEnergy.items() )
+        return allMoleculesEnergies
     
     # T triggers a spontaneous Reaction when deltaG < 0
     def getGibbsEnergyAndTemperatures(self):
         try:
-            deltaH: float = self.getDeltaH()
-            deltaS: float = self.getDeltaS()
-            deltaS = deltaS * (1000**-1)
-            deltaG: float = 0
-            print("deltaH: ", deltaH, "deltaS: ", deltaS)
+            deltaH = self.getDeltaH()
+            deltaS = self.getDeltaS()
+            deltaG = [0.] * len(deltaH)
+            print("deltaH: ", deltaH[298], "deltaS: ", deltaS[298])
 
             # Units: temperature has units of K
-            for i, t in enumerate(TEMPERATURE_RANGE):
-                deltaG = round(deltaH - t * deltaS, 2)
-                print("Temperature: {} ; Gibbs Energy: {}".format(t, deltaG))
-
+            for i, t in enumerate(self.__temperatureRange):
+                dS = deltaS[i] * (math.pow(1000, -1))
+                dH = deltaH[i]
+                deltaG[i] = round(dH - t * dS, 2)
+                #print("TEMPERATURE: {} ; Gibbs Free Energy: {}".format(t, deltaG[i]))
+            
+            #print("Temperature: {} ; Gibbs Energy: {}".format(298, deltaG[298]))
 
         except Exception as e:
             print("{}::Exception:: {}".format(self.getGibbsEnergyAndTemperatures.__name__, e))

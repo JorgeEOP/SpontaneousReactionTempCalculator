@@ -17,6 +17,8 @@ class EntropyCalculator(EntCalculatorBase):
         coefficients = self.MolShomateCoeffDict[molecule]
         stdEntropy =  collections.defaultdict(dict)
 
+        print("Calculating Entropy of: {} in the range [{}, {})".format(molecule, temperatures.start, temperatures.stop))
+
         for t in temperatures:
             try:
                 temp = t/1000
@@ -29,5 +31,6 @@ class EntropyCalculator(EntCalculatorBase):
 
             except ZeroDivisionError:
                 stdEntropy[t] = "NaN"
-
+        print("---------------------------------------------")
+        
         return stdEntropy

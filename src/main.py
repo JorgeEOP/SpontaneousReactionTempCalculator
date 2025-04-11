@@ -1,5 +1,8 @@
 from TemperatureCalculator import TemperatureCalculator as tc
+from EntropyCalculator import EntropyCalculator as scalc
 import collections
+
+TEMPERATURE_RANGE = range(0, 700)
 
 if __name__ == '__main__':
     products: dict = collections.defaultdict(dict)
@@ -7,13 +10,15 @@ if __name__ == '__main__':
 
     products["Fe2O3"] = 2
     reactants["Fe"] = 4
-    reactants["O2"] = 4
+    reactants["O2"] = 3
 
     calculator = tc()
-    calculator.setProducts(reactants)
-    calculator.setReactants(products)
-    deltaH = calculator.getDeltaH()
-    deltaS = calculator.getDeltaS()
-    
-    #print(deltaH)
-    #print(deltaS)
+    calculator.setProducts(products)
+    calculator.setReactants(reactants)
+    #calculator.setTemperatureRange(TEMPERATURE_RANGE)
+
+    calculator.getDeltaH()
+    #calculator.getGibbsEnergyAndTemperatures()
+
+    #entrpopyCalc = scalc()
+    #entrpopyCalc.getEntropy("Fe", range(0,700))

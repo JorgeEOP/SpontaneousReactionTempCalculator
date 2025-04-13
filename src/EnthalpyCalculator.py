@@ -16,27 +16,13 @@ We need:
   c: specific heat capacity
   t: temperature
 """
-
-# Units: g/mol
+"""
 MoleculesMassDict = {
     "Fe": 55.84,
     "O2": 31.99,
     "Fe2O3": 159.68
 }
-
-# Units: J/K*g
-MoleculesSpecificHeatCapacityDict = {
-    "Fe": 0,
-    "O2": 0, # https://webbook.nist.gov/cgi/cbook.cgi?ID=C7782447&Mask=1
-    "Fe2O3": -825.50
-}
-
-MoleculesStdFormationEnthalpy = {
-    "Fe": 12.40,
-    "O2": 0, # https://webbook.nist.gov/cgi/cbook.cgi?ID=C7782447&Mask=1
-    "Fe2O3": -822.2
-}
-
+"""
 
 class EnthalpyCalculator(EntCalculatorBase):
     def __init__(self):
@@ -51,13 +37,18 @@ class EnthalpyCalculator(EntCalculatorBase):
         for t in temperatures:
             try:
                 temp = t/1000
-                enthalpy = coefficients["A"]*temp + coefficients["B"]*math.pow(temp,2)/2 + coefficients["C"]*math.pow(temp,3)/3 + \
-                           coefficients["D"]*math.pow(temp,4)/4 - coefficients["E"]*(1/temp) + coefficients["F"] - coefficients["H"]
-                stdEntalpy[t] = enthalpy + MoleculesStdFormationEnthalpy[molecule]
+                enthalpy = coefficients["A"]*temp + \
+                           coefficients["B"]*math.pow(temp,2)/2 +\
+                           coefficients["C"]*math.pow(temp,3)/3 + \
+                           coefficients["D"]*math.pow(temp,4)/4 - \
+                           coefficients["E"]*(1/temp) + \
+                           coefficients["F"] - \
+                           coefficients["H"]
+                stdEntalpy[t] = enthalpy + self.MoleculesStdFormationEnthalpy[molecule]
 
                 #if (t > 294 and t < 300):
-                #    print ("Temp: {} ; Standard enthalpy: {}".format(t, enthalpy) )
-                
+                if (t == 298):
+                    print ("Temp: {} ; Standard enthalpy: {}".format(t, stdEntalpy[t]) )
 
             except ZeroDivisionError:
                 stdEntalpy[t] = "NaN"

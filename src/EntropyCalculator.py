@@ -22,12 +22,17 @@ class EntropyCalculator(EntCalculatorBase):
         for t in temperatures:
             try:
                 temp = t/1000
-                entropy = coefficients["A"]* np.log(temp) + coefficients["B"]*temp + coefficients["C"]*math.pow(temp,2)/2 + \
-                           coefficients["D"]*math.pow(temp,3)/3 - coefficients["E"]*(1/(2*math.pow(temp, 2))) + coefficients["G"]
+                entropy = coefficients["A"]* np.log(temp) + \
+                          coefficients["B"]*temp + \
+                          coefficients["C"]*math.pow(temp,2)/2 + \
+                          coefficients["D"]*math.pow(temp,3)/3 - \
+                          coefficients["E"]*(1/(2*math.pow(temp, 2))) + \
+                          coefficients["G"]
                 stdEntropy[t] = entropy
 
-                #if (t > 294 and t < 300):
-                #    print ("Temp: {} ; Standard entropy: {}".format(t, entropy) )
+                #if (t > 295 and t < 300):
+                if (t == 298):
+                    print ("Temp: {} ; Standard entropy: {}".format(t, entropy) )
 
             except ZeroDivisionError:
                 stdEntropy[t] = "NaN"

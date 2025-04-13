@@ -30,6 +30,8 @@ MoleculesSpecificHeatCapacityDict = {
     "Fe2O3": -825.50
 }
 
+
+
 # TODO: to extend to more T ranges
 class EntCalculatorBase:
     MolShomateCoeffDict = {
@@ -62,8 +64,14 @@ class EntCalculatorBase:
         "F": -863.20,
         "G": 161.07,
         "H": -825.50
+        }
     }
-}
+    MoleculesStdFormationEnthalpy = {
+        "Fe": 12.40,
+        "O2": 0, # https://webbook.nist.gov/cgi/cbook.cgi?ID=C7782447&Mask=1
+        "Fe2O3": -822.2
+    }
+
     def __init__(self):
         pass
 
